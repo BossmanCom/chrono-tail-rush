@@ -293,24 +293,36 @@ canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   const t = e.touches[0];
   const rect = canvas.getBoundingClientRect();
-  const y = (t.clientY - rect.top) * (canvas.height / rect.height);
-  const tx = (t.clientX - rect.left) * (canvas.width / rect.width);
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const tx = (t.clientX - rect.left) * scaleX;
+  const ty = (t.clientY - rect.top) * scaleY;
 
   if (state === 'SELECT') {
-    const third = canvas.width / 3;
-    let tapped = 0;
-    if (tx < third) tapped = 0;
-    else if (tx < third * 2) tapped = 1;
-    else tapped = 2;
+    // Exact card bounds (same as drawSelect)
+    const cardW = canvas.width * 0.28;
+    const startX = canvas.width * 0.08;
+    const gap = canvas.width * 0.04;
+    const cardY = canvas.height * 0.28;
+    const cardH = 220;
 
-    // Second tap on the same character starts the game
-    if (tapped === selectedChar) {
+    let hitCard = -1;
+    for (let i = 0; i < 3; i++) {
+      const x = startX + i * (cardW + gap);
+      if (tx >= x && tx <= x + cardW && ty >= cardY && ty <= cardY + cardH) {
+        hitCard = i;
+        break;
+      }
+    }
+
+    if (hitCard !== -1) {
+      selectedChar = hitCard;
+    } else if (ty > canvas.height * 0.72) {
+      // Big start zone at the bottom
       startGame();
-    } else {
-      selectedChar = tapped;
     }
   } else if (state === 'PLAYING') {
-    touchY = y;
+    touchY = ty;
     boosting = true;
     boostTimer = 22;
   } else if (state === 'GAMEOVER') {
@@ -327,6 +339,43 @@ canvas.addEventListener('touchmove', e => {
 }, { passive: false });
 
 canvas.addEventListener('touchend', () => { touchY = null; });
+
+// Also allow mouse click for desktop testing
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const tx = (e.clientX - rect.left) * scaleX;
+  const ty = (e.clientY - rect.top) * scaleY;
+
+  if (state === 'SELECT') {
+    const cardW = canvas.width * 0.28;
+    const startX = canvas.width * 0.08;
+    const gap = canvas.width * 0.04;
+    const cardY = canvas.height * 0.28;
+    const cardH = 220;
+
+    let hitCard = -1;
+    for (let i = 0; i < 3; i++) {
+      const x = startX + i * (cardW + gap);
+      if (tx >= x && tx <= x + cardW && ty >= cardY && ty <= cardY + cardH) {
+        hitCard = i;
+        break;
+      }
+    }
+
+    if (hitCard !== -1) {
+      selectedChar = hitCard;
+    } else if (ty > canvas.height * 0.72) {
+      startGame();
+    }
+  } else if (state === 'PLAYING') {
+    boosting = true;
+    boostTimer = 22;
+  } else if (state === 'GAMEOVER') {
+    state = 'SELECT';
+  }
+});
 
 function startGame() {
   state = 'PLAYING';
@@ -420,15 +469,20 @@ function drawSelect() {
     ctx.fillText(c.description, x + cardW / 2, y + 180);
   });
 
-  ctx.fillStyle = '#fff';
-  ctx.font = '14px Courier New';
-  ctx.fillText('TAP CHARACTER TO SELECT', canvas.width / 2, canvas.height - 55);
+  // Big clear start button area
+  ctx.fillStyle = 'rgba(0, 255, 100, 0.15)';
+  ctx.fillRect(20, canvas.height * 0.78, canvas.width - 40, 70);
+  ctx.strokeStyle = '#7cfc00';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(20, canvas.height * 0.78, canvas.width - 40, 70);
+
   ctx.fillStyle = '#7cfc00';
-  ctx.font = 'bold 15px Courier New';
-  ctx.fillText('TAP THE SAME ONE AGAIN TO START', canvas.width / 2, canvas.height - 30);
+  ctx.font = 'bold 20px Courier New';
+  ctx.fillText('TAP HERE TO START', canvas.width / 2, canvas.height * 0.78 + 42);
+
   ctx.fillStyle = '#666';
   ctx.font = '11px Courier New';
-  ctx.fillText('HIGH SCORE: ' + highScore, canvas.width / 2, canvas.height - 10);
+  ctx.fillText('HIGH SCORE: ' + highScore, canvas.width / 2, canvas.height - 12);
 }
 
 function updatePlaying() {
