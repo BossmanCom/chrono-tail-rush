@@ -68,7 +68,6 @@ const scoreBoard = document.getElementById('scoreBoard');
 const eraNameEl = document.getElementById('eraName');
 const controlsHint = document.getElementById('controlsHint');
 
-// Resize for mobile + pixel feel
 function resize() {
   const maxW = Math.min(window.innerWidth, 480);
   const maxH = Math.min(window.innerHeight, 720);
@@ -80,7 +79,6 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// ========== CHARACTERS ==========
 const CHARACTERS = [
   {
     id: 'ani',
@@ -111,7 +109,6 @@ const CHARACTERS = [
   }
 ];
 
-// ========== ERAS ==========
 const ERAS = [
   { name: 'CLOUD ERA', bg: '#1a1a2e', accent: '#e0c3fc', island: '#4a4a6a', particle: '#ffffff' },
   { name: 'FEUDAL MIST', bg: '#1a120b', accent: '#f4d35e', island: '#5c4033', particle: '#ffd700' },
@@ -120,7 +117,6 @@ const ERAS = [
   { name: 'PRIMORDIAL', bg: '#0a1f0a', accent: '#7cfc00', island: '#2e4a1e', particle: '#adff2f' }
 ];
 
-// ========== GAME STATE ==========
 let state = 'SELECT';
 let selectedChar = 0;
 let score = 0;
@@ -298,12 +294,21 @@ canvas.addEventListener('touchstart', e => {
   const t = e.touches[0];
   const rect = canvas.getBoundingClientRect();
   const y = (t.clientY - rect.top) * (canvas.height / rect.height);
+  const tx = (t.clientX - rect.left) * (canvas.width / rect.width);
+
   if (state === 'SELECT') {
     const third = canvas.width / 3;
-    const tx = (t.clientX - rect.left) * (canvas.width / rect.width);
-    if (tx < third) selectedChar = 0;
-    else if (tx < third * 2) selectedChar = 1;
-    else selectedChar = 2;
+    let tapped = 0;
+    if (tx < third) tapped = 0;
+    else if (tx < third * 2) tapped = 1;
+    else tapped = 2;
+
+    // Second tap on the same character starts the game
+    if (tapped === selectedChar) {
+      startGame();
+    } else {
+      selectedChar = tapped;
+    }
   } else if (state === 'PLAYING') {
     touchY = y;
     boosting = true;
@@ -417,10 +422,13 @@ function drawSelect() {
 
   ctx.fillStyle = '#fff';
   ctx.font = '14px Courier New';
-  ctx.fillText('TAP A CHARACTER  •  THEN TAP AGAIN TO START', canvas.width / 2, canvas.height - 40);
+  ctx.fillText('TAP CHARACTER TO SELECT', canvas.width / 2, canvas.height - 55);
+  ctx.fillStyle = '#7cfc00';
+  ctx.font = 'bold 15px Courier New';
+  ctx.fillText('TAP THE SAME ONE AGAIN TO START', canvas.width / 2, canvas.height - 30);
   ctx.fillStyle = '#666';
   ctx.font = '11px Courier New';
-  ctx.fillText('HIGH SCORE: ' + highScore, canvas.width / 2, canvas.height - 20);
+  ctx.fillText('HIGH SCORE: ' + highScore, canvas.width / 2, canvas.height - 10);
 }
 
 function updatePlaying() {
